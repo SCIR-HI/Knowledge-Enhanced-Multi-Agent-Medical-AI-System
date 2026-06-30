@@ -314,6 +314,22 @@ FAISS_INDEX_PATH = "/path/to/faiss_index_A"
 
 ---
 
+### 4.1.1 模型与数据发布策略
+
+代码仓库不直接托管模型权重、FAISS 索引、知识库文件或训练数据。相关资源后续计划通过 Hugging Face 分开发布：
+
+| 资源类型 | 说明 | 计划发布位置 |
+|---|---|---|
+| 医学领域 Reranker 权重 | 基于医学 Query-Document 样本微调后的 Cross-Encoder Reranker | Hugging Face Models |
+| 检索模型配置 | Embedding、Reranker、阈值、Top-K 等推荐配置 | Hugging Face Models / GitHub 文档 |
+| 向量知识库 | FAISS 索引、知识条目、元数据映射文件 | Hugging Face Datasets |
+| 训练数据 | Query-Positive、Hard Negative、Listwise 训练组 | Hugging Face Datasets |
+| 评测数据 | 检索评测集、多智能体问答评测样例 | Hugging Face Datasets |
+
+发布前需要完成数据来源核验、医学资料授权检查、脱敏处理和许可说明整理。当前 GitHub 版本仅提供代码和流程说明，部署时需要用户将本地已有模型与知识库路径写入 `config.py`。
+
+---
+
 ### 4.2 基座模型
 
 | 模型 | 架构 | 作用 |

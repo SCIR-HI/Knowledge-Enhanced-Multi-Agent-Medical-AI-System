@@ -157,6 +157,23 @@ LLM 知识增强与原子化
 
 ---
 
+## 模型与数据发布说明
+
+本 GitHub 仓库仅发布系统源码、接口实现、文档和示意图，不直接托管模型权重、向量索引或医学数据文件。
+
+后续计划通过 Hugging Face 单独发布以下资源：
+
+| 资源类型 | 内容 | 发布位置 |
+| --- | --- | --- |
+| Reranker 权重 | 医学领域微调后的 Cross-Encoder Reranker | Hugging Face Models，待发布后补充链接 |
+| Embedding / 检索配置 | 与知识库检索配套的模型配置和使用说明 | Hugging Face Models，待发布后补充链接 |
+| 向量知识库 | FAISS 索引、知识条目元数据、处理后的知识片段 | Hugging Face Datasets，待发布后补充链接 |
+| 训练与评测数据 | Reranker 训练样本、困难负例、评测集等 | Hugging Face Datasets，待发布后补充链接 |
+
+由于医学资料可能涉及版权、授权和合规要求，数据集发布前会进行来源核验、脱敏检查和许可说明整理。当前阶段请将 `config.py` 中的模型路径和知识库路径配置为本地已有资源。
+
+---
+
 ## 多智能体模块概览
 
 
@@ -281,7 +298,7 @@ vllm serve /path/to/Qwen3-32B-AWQ \
 
 ### 4. 配置模型与知识库路径
 
-在 `config.py` 中配置：
+在 `config.py` 中配置本地模型、服务地址和知识库路径。若使用后续发布在 Hugging Face 的 Reranker 权重、向量知识库或训练数据，请先下载到本地，再将路径填入配置文件：
 
 ```python
 EMBEDDING_MODEL = "/path/to/bge-m3"
@@ -290,6 +307,8 @@ MODEL_NAME = "Qwen3-32B-AWQ"
 RERANK_MODEL = "/path/to/bge-reranker-base"
 FAISS_INDEX_PATH = "/path/to/faiss_index_A"
 ```
+
+其中 `RERANK_MODEL` 和 `FAISS_INDEX_PATH` 对应的权重与索引文件后续将通过 Hugging Face 发布，GitHub 仓库不包含这些大文件。
 
 ### 5. 启动后端服务
 
