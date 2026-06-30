@@ -11,12 +11,13 @@ from prettytable import PrettyTable
 from utils import Agent
 from openai import OpenAI
 from retriever import Retriever
+from config import DEFAULT_FAISS_VERSION
 
 # 线程安全锁
 callback_lock = Lock()
 result_lock = Lock()
 interaction_lock = Lock()
-retriever = Retriever("v4")
+retriever = Retriever(DEFAULT_FAISS_VERSION)
 def parse_hierarchy(info, emojis):
     moderator = Node('moderator (\U0001F468\u200D\u2696\uFE0F)')
     agents = [moderator]
@@ -610,4 +611,3 @@ def process_diff_query(question, client, callback=None,need_rag=False):
         callback('step', '复杂分析完成', agent_name='系统总结')
 
     return final_decision_content, final_ans
-

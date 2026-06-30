@@ -1,14 +1,4 @@
-from config import MODEL_NAME
-
-
-generation_config_base = {
-    "temperature": 0.7,
-    "top_p": 0.8,
-    "max_tokens": 16384,
-    "frequency_penalty": 0.05,
-    "stop": None,
-    "stream": True,
-}
+from config import ENABLE_THINKING, GENERATION_CONFIG_BASE, MODEL_NAME
 
 
 def _collect_rag_context(question, client, retriever):
@@ -57,12 +47,12 @@ def process_base_query(question, client, retriever=None, callback=None):
                 ["理解问题内容", "组织专业答案"],
             )
 
-        config = generation_config_base.copy()
+        config = GENERATION_CONFIG_BASE.copy()
         config.update(
             {
                 "messages": messages,
                 "model": MODEL_NAME,
-                "extra_body": {"chat_template_kwargs": {"enable_thinking": False}},
+                "extra_body": {"chat_template_kwargs": {"enable_thinking": ENABLE_THINKING}},
             }
         )
 

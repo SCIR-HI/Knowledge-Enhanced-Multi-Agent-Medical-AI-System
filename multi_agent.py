@@ -14,30 +14,44 @@ import queue
 import time
 from typing import Generator, Dict, Any
 from openai import OpenAI
+from config import (
+    CORS_ALLOW_CREDENTIALS,
+    CORS_ALLOW_HEADERS,
+    CORS_ALLOW_METHODS,
+    CORS_ALLOW_ORIGINS,
+    DEFAULT_FAISS_VERSION,
+    GENERATION_CONFIG_BASE,
+    MAX_CONVERSATION_HISTORY,
+    MAX_CONVERSATION_TURNS,
+    MODEL_NAME,
+    OPENAI_API_KEY,
+    SERVE_URL,
+    SERVER_HOST,
+    SERVER_PORT,
+    STREAM_RETRIEVER_MIN_SCORE,
+)
 
 app = FastAPI()
 
 # 添加CORS中间件
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=CORS_ALLOW_ORIGINS,
+    allow_credentials=CORS_ALLOW_CREDENTIALS,
+    allow_methods=CORS_ALLOW_METHODS,
+    allow_headers=CORS_ALLOW_HEADERS,
 )
 
-# vLLM部署的Qwen2.5-14B-Instruct在线服务配置
-model_name = "/home/share/models/Qwen2.5-14B-Instruct"
 client = OpenAI(
-    base_url="http://localhost:8000/v1",  # 替换为你的vLLM服务地址
-    api_key="not-needed"  # vLLM服务通常不需要真实的API key
+    base_url=SERVE_URL,
+    api_key=OPENAI_API_KEY,
 )
-retrieverr = Retriever("v4" ,min_score=0.95)
+retrieverr = Retriever(DEFAULT_FAISS_VERSION, min_score=STREAM_RETRIEVER_MIN_SCORE)
 # ✨ 新增：全局消息队列，用于收集中间过程
 message_queues = {}
 conversation_history = {}
 
-def get_conversation_context(session_id: str, max_turns: int = 5) -> str:
+def get_conversation_context(session_id: str, max_turns: int = MAX_CONVERSATION_TURNS) -> str:
     """
     获取对话上下文，只包含最近几轮的用户问题和最终答案
     Args:
@@ -82,7 +96,7 @@ def save_conversation_turn(session_id: str, question: str, answer: str):
     })
     
     # 可选：限制历史记录长度，避免内存无限增长
-    max_history_length = 20  # 最多保存20轮对话
+    max_history_length = MAX_CONVERSATION_HISTORY
     if len(conversation_history[session_id]) > max_history_length:
         conversation_history[session_id] = conversation_history[session_id][-max_history_length:]
 
@@ -100,15 +114,8 @@ def create_question_with_context(question: str, session_id: str) -> str:
         return f"{context}当前问题: {question}"
     else:
         return question
-# 保留原有的生成配置（用于参考，实际使用OpenAI API参数）
-generation_config_base = {
-    "model": model_name,
-    "temperature": 0.7,
-    "top_p": 0.8,
-    "max_tokens": 16384,
-    "frequency_penalty": 0.05,  # 对应repetition_penalty
-    "stop": None,
-}
+generation_config_base = GENERATION_CONFIG_BASE.copy()
+generation_config_base["model"] = MODEL_NAME
 
 # ✨ 新增：流式输出辅助类
 class StreamHelper:
@@ -402,4 +409,4 @@ async def chat_endpoint(request: Request):
     }
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=50042)
+    uvicorn.run(app, host=SERVER_HOST, port=SERVER_PORT)

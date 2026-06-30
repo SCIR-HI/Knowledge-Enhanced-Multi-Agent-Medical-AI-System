@@ -251,7 +251,7 @@ LLM 知识增强与原子化
 
 ```text
 .
-├── config.py          # 模型路径、服务地址、Embedding/Reranker/FAISS 配置
+├── config.py          # 全局配置：模型、服务、检索、生成参数、CORS 与会话参数
 ├── utils.py           # Agent 封装、LLM 调用、流式输出、难度评估
 ├── retriever.py       # 医学知识检索、子问题分解、子问题润色、重排
 ├── md_agent.py        # 动态专家招募、多专家讨论、最终决策汇总
@@ -296,19 +296,47 @@ vllm serve /path/to/Qwen3-32B-AWQ \
   --served-model-name Qwen3-32B-AWQ
 ```
 
-### 4. 配置模型与知识库路径
+### 4. 修改集中配置
 
-在 `config.py` 中配置本地模型、服务地址和知识库路径。若使用后续发布在 Hugging Face 的 Reranker 权重、向量知识库或训练数据，请先下载到本地，再将路径填入配置文件：
+项目所有可调整配置集中在 `config.py`。若使用后续发布在 Hugging Face 的 Reranker 权重、向量知识库或训练数据，请先下载到本地，再将路径填入配置文件：
 
 ```python
-EMBEDDING_MODEL = "/path/to/bge-m3"
+# OpenAI-compatible LLM service.
 SERVE_URL = "http://localhost:8000/v1"
+OPENAI_API_KEY = "not-needed"
 MODEL_NAME = "Qwen3-32B-AWQ"
+
+# Local retrieval resources.
+EMBEDDING_MODEL = "/path/to/bge-m3"
 RERANK_MODEL = "/path/to/bge-reranker-base"
 FAISS_INDEX_PATH = "/path/to/faiss_index_A"
+
+# Retrieval defaults.
+DEFAULT_FAISS_VERSION = "v4"
+RETRIEVER_MAIN_TOPK = 3
+RETRIEVER_SUB_TOPK = 3
+RETRIEVER_MIN_SCORE = 0.9
+STREAM_RETRIEVER_MIN_SCORE = 0.95
+RERANK_TOP_N = 10
+VECTOR_RETRIEVER_TOP_K = 50
+
+# FastAPI service.
+SERVER_HOST = "0.0.0.0"
+SERVER_PORT = 50042
+
+# Generation defaults.
+GENERATION_CONFIG_BASE = {
+    "model": MODEL_NAME,
+    "temperature": 0.7,
+    "top_p": 0.8,
+    "max_tokens": 16384,
+    "frequency_penalty": 0.05,
+    "stop": None,
+    "stream": True,
+}
 ```
 
-其中 `RERANK_MODEL` 和 `FAISS_INDEX_PATH` 对应的权重与索引文件后续将通过 Hugging Face 发布，GitHub 仓库不包含这些大文件。
+`utils.py`、`retriever.py`、`multi_agent.py`、`md_agent.py`、`one_agent.py` 和 `test.py` 均从 `config.py` 读取配置，不再在业务代码中维护模型路径、服务地址、检索阈值或生成参数。其中 `RERANK_MODEL` 和 `FAISS_INDEX_PATH` 对应的权重与索引文件后续将通过 Hugging Face 发布，GitHub 仓库不包含这些大文件。
 
 ### 5. 启动后端服务
 

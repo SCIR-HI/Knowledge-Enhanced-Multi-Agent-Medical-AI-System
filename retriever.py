@@ -1,7 +1,20 @@
 import json
 from typing import Optional, Dict, List, Any
 import torch
-from config import MODEL_NAME
+from config import (
+    DEFAULT_FAISS_VERSION,
+    EMBEDDING_MODEL,
+    ENABLE_THINKING,
+    FAISS_INDEX_VERSIONS,
+    MODEL_NAME,
+    RERANK_MODEL,
+    RERANK_TOP_N,
+    RETRIEVER_GENERATION_CONFIG,
+    RETRIEVER_MAIN_TOPK,
+    RETRIEVER_MIN_SCORE,
+    RETRIEVER_SUB_TOPK,
+    VECTOR_RETRIEVER_TOP_K,
+)
 from langchain.retrievers.document_compressors.base import BaseDocumentCompressor
 from pydantic import Field
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
@@ -14,25 +27,6 @@ from langchain.retrievers import ContextualCompressionRetriever
 import regex as re
 from transformers.generation.utils import GenerationConfig
 
-EMBEDDING_MODEL = "/home/mma/model/bge-m3"  
-RERANK_MODEL = "/home/mma/model/bge-reranker-base"
-FAISS_INDEX_PATH = "/home/mma/task/boe/EVAL/framework/knowledge_base/faiss_index_A_v4"
-model_name = "/home/mma/model/Qwen3-32B-AWQ"
-version_dict = {
-    "v1":"/home/mma/task/boe/EVAL/framework/knowledge_base/faiss_index_A_v1",
-    "v2":"/home/mma/task/boe/EVAL/framework/knowledge_base/faiss_index_A_v2",
-    "v3":"/home/mma/task/boe/EVAL/framework/knowledge_base/faiss_index_A_v3",
-    "v3_dy":"/home/mma/task/boe/EVAL/framework/knowledge_base/faiss_index_A_v3_dy",
-    "v4":"/home/mma/task/boe/EVAL/framework/knowledge_base/faiss_index_A_v4",
-}
-generation_config_base = {
-    "temperature": 0.7,
-    "top_p": 0.8,
-    "max_tokens": 16384,
-    "frequency_penalty": 0.05,  # 对应原来的repetition_penalty
-    "stop": None,  # OpenAI API的stop参数需要字符串，而不是token id
-    "stream": False,  # 启用流式输出
-}
 _JSON_BLOCK_RE = re.compile(r"(\{(?:[^{}]|(?1))*\}|\[(?:[^\[\]]|(?0))*\])", re.S)
 
 def _extract_first_json_block(text: str) -> str:
@@ -57,9 +51,9 @@ def _safe_json_loads(text: str) -> Any:
     return json.loads(text)
 
 class BgeReranker(BaseDocumentCompressor):
-    model_name: str = Field("/home/mma/model/bge-reranker-base", description="模型名称")
-    top_n: int = Field(10, description="保留的最大文档数")
-    min_score: float = Field(0.9, description="保留文档的最低阈值")
+    model_name: str = Field(RERANK_MODEL, description="模型名称")
+    top_n: int = Field(RERANK_TOP_N, description="保留的最大文档数")
+    min_score: float = Field(RETRIEVER_MIN_SCORE, description="保留文档的最低阈值")
     device: str = Field("cuda", description="使用的设备 CPU/CUDA") 
 
     class Config:
@@ -136,11 +130,11 @@ def decompose_question(question: str, model) -> List[Dict[str, Any]]:
 """.strip()
     messages = []
     messages.append({"role": "user", "content": f'{prompt}'})
-    config = generation_config_base.copy()
+    config = RETRIEVER_GENERATION_CONFIG.copy()
     config.update({
         "messages": messages,
         "model": MODEL_NAME,
-        "extra_body": {"chat_template_kwargs": {"enable_thinking": False}}
+        "extra_body": {"chat_template_kwargs": {"enable_thinking": ENABLE_THINKING}}
     })
     response = model.chat.completions.create(**config).choices[0].message.content
     try:
@@ -183,11 +177,11 @@ def decompose_question_dim(question: str, model,description):
 """.strip()
     messages = []
     messages.append({"role": "user", "content": f'{prompt}'})
-    config = generation_config_base.copy()
+    config = RETRIEVER_GENERATION_CONFIG.copy()
     config.update({
         "messages": messages,
         "model": MODEL_NAME,
-        "extra_body": {"chat_template_kwargs": {"enable_thinking": False}}
+        "extra_body": {"chat_template_kwargs": {"enable_thinking": ENABLE_THINKING}}
     })
     response = model.chat.completions.create(**config).choices[0].message.content
     try:
@@ -235,11 +229,11 @@ def judge_and_polish(subquestions: List[str], model) -> List[Dict[str, Any]]:
 
     messages = []
     messages.append({"role": "user", "content": f'{prompt}'})
-    config = generation_config_base.copy()
+    config = RETRIEVER_GENERATION_CONFIG.copy()
     config.update({
         "messages": messages,
         "model": MODEL_NAME,
-        "extra_body": {"chat_template_kwargs": {"enable_thinking": False}}
+        "extra_body": {"chat_template_kwargs": {"enable_thinking": ENABLE_THINKING}}
     })
     response = model.chat.completions.create(**config).choices[0].message.content
 
@@ -264,18 +258,24 @@ def judge_and_polish(subquestions: List[str], model) -> List[Dict[str, Any]]:
         return []
 
 class Retriever:
-    def __init__(self, base_version, main_topk=3, sub_topk=3, min_score=0.9):
+    def __init__(
+        self,
+        base_version=DEFAULT_FAISS_VERSION,
+        main_topk=RETRIEVER_MAIN_TOPK,
+        sub_topk=RETRIEVER_SUB_TOPK,
+        min_score=RETRIEVER_MIN_SCORE,
+    ):
         self.main_topk = main_topk
         self.sub_topk = sub_topk
         self.min_score =min_score
-        FAISS_INDEX_PATH = version_dict[base_version]
-        self.guideline_bge_reranker = BgeReranker(model_name=RERANK_MODEL, top_n=10, min_score=self.min_score)
+        faiss_index_path = FAISS_INDEX_VERSIONS[base_version]
+        self.guideline_bge_reranker = BgeReranker(model_name=RERANK_MODEL, top_n=RERANK_TOP_N, min_score=self.min_score)
         self.embeddings = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL)
-        self.main_vector_db = FAISS.load_local(FAISS_INDEX_PATH, self.embeddings,allow_dangerous_deserialization=True )
+        self.main_vector_db = FAISS.load_local(faiss_index_path, self.embeddings,allow_dangerous_deserialization=True )
 
     def retrieve_docs_for_question(self, question, topk):
         top_guideline_docs = []
-        main_retriever = self.main_vector_db.as_retriever(search_kwargs={"k": 50})
+        main_retriever = self.main_vector_db.as_retriever(search_kwargs={"k": VECTOR_RETRIEVER_TOP_K})
         main_compressor = self.guideline_bge_reranker
         compression_main_retriever = ContextualCompressionRetriever(
             base_compressor=main_compressor,
@@ -304,7 +304,7 @@ class Retriever:
                 "main_docs": [get_doc_content(top_guideline_docs, idx) for idx in range(min(topk, len(top_guideline_docs)))]
             }
 
-    def retrieve_docs_multi_channel(self, question, model, is_polish,need_dim = None):
+    def retrieve_docs_multi_channel(self, question, model, is_polish=False,need_dim = None):
         main_results = self.retrieve_docs_for_question(question, self.main_topk) 
         print("question\n", question)
         print("main_results")

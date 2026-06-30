@@ -1,34 +1,21 @@
 import json
 from openai import OpenAI
-from config import SERVE_URL,MODEL_NAME
-
-# vLLM部署的Qwen2.5-14B-Instruct在线服务配置
-client = OpenAI(
-    base_url=SERVE_URL,  # 替换为你的vLLM服务地址
-    api_key="not-needed"  # vLLM服务通常不需要真实的API key
+from config import (
+    ENABLE_THINKING,
+    GENERATION_CONFIG_BASE,
+    GENERATION_CONFIG_GREEDY,
+    MODEL_NAME,
+    OPENAI_API_KEY,
+    SERVE_URL,
+    TEMP_RESPONSE_MAX_TOKENS,
+    TEMP_RESPONSE_STREAM,
+    TEMP_RESPONSE_TEMPERATURES,
 )
 
-# 模型名称 - 使用vLLM部署的模型路径或别名
-MODEL_NAME = MODEL_NAME  # 或者vLLM服务中设置的模型别名
-
-# 生成配置参数（对应原来的vLLM参数）
-generation_config_base = {
-    "model": MODEL_NAME,
-    "temperature": 0.7,
-    "top_p": 0.8,
-    "max_tokens": 16384,
-    "frequency_penalty": 0.05,  # 对应repetition_penalty的替代
-    "stop": None,
-    "stream": True,  # 启用流式输出
-}
-
-generation_config_greedy = {
-    "model": MODEL_NAME,
-    "temperature": 0.0,
-    "max_tokens": 16384,
-    "stop": None,
-    "stream": False,  # 启用流式输出
-}
+client = OpenAI(
+    base_url=SERVE_URL,
+    api_key=OPENAI_API_KEY,
+)
 
 
 class Agent:
@@ -54,13 +41,13 @@ class Agent:
         
         # 根据角色选择生成参数
         if self.role == '医学初步评估专家' or self.role == '招募者':
-            config = generation_config_greedy.copy()
+            config = GENERATION_CONFIG_GREEDY.copy()
         else:
-            config = generation_config_base.copy()
+            config = GENERATION_CONFIG_BASE.copy()
         
         config["model"] = self.model_name
         config["messages"] = self.messages
-        config["extra_body"] = {"chat_template_kwargs": {"enable_thinking": False}}
+        config["extra_body"] = {"chat_template_kwargs": {"enable_thinking": ENABLE_THINKING}}
         
         try:
             if config.get("stream", False):
@@ -96,18 +83,17 @@ class Agent:
         支持流式输出的多温度响应方法
         """
         self.messages.append({"role": "user", "content": message})
-        temperatures = [0.1]
         responses = {}
         
-        for temperature in temperatures:
+        for temperature in TEMP_RESPONSE_TEMPERATURES:
             try:
                 config = {
                     "model": self.model_name,
                     "messages": self.messages,
                     "temperature": temperature,
-                    "max_tokens": 8192,
-                    "stream": True,
-                    "extra_body": {"chat_template_kwargs": {"enable_thinking": False}}
+                    "max_tokens": TEMP_RESPONSE_MAX_TOKENS,
+                    "stream": TEMP_RESPONSE_STREAM,
+                    "extra_body": {"chat_template_kwargs": {"enable_thinking": ENABLE_THINKING}}
                 }
                 
                 response_stream = self.client.chat.completions.create(**config)
