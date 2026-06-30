@@ -7,16 +7,13 @@ MODEL_NAME = "Qwen3-32B-AWQ"
 
 # Local retrieval resources. Replace these paths with downloaded local assets.
 EMBEDDING_MODEL = "/path/to/bge-m3"
-RERANK_MODEL = "/path/to/bge-reranker-base"
+RERANK_MODEL = "literary123/test_encoder_only_base_bge-reranker-base-noscore_qwen_distill2"
+FAISS_INDEX_REPO = "literary123/faiss_index_A_v4"
 FAISS_INDEX_PATH = "/path/to/faiss_index_A"
 
 # Multiple FAISS index versions can be registered here when available.
 DEFAULT_FAISS_VERSION = "v4"
 FAISS_INDEX_VERSIONS = {
-    "v1": "/path/to/faiss_index_A_v1",
-    "v2": "/path/to/faiss_index_A_v2",
-    "v3": "/path/to/faiss_index_A_v3",
-    "v3_dy": "/path/to/faiss_index_A_v3_dy",
     "v4": FAISS_INDEX_PATH,
 }
 

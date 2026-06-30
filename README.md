@@ -161,16 +161,14 @@ LLM 知识增强与原子化
 
 本 GitHub 仓库仅发布系统源码、接口实现、文档和示意图，不直接托管模型权重、向量索引或医学数据文件。
 
-后续计划通过 Hugging Face 单独发布以下资源：
+本项目依赖的 Reranker 权重和 FAISS 知识库已通过 Hugging Face 单独发布：
 
 | 资源类型 | 内容 | 发布位置 |
 | --- | --- | --- |
-| Reranker 权重 | 医学领域微调后的 Cross-Encoder Reranker | Hugging Face Models，待发布后补充链接 |
-| Embedding / 检索配置 | 与知识库检索配套的模型配置和使用说明 | Hugging Face Models，待发布后补充链接 |
-| 向量知识库 | FAISS 索引、知识条目元数据、处理后的知识片段 | Hugging Face Datasets，待发布后补充链接 |
-| 训练与评测数据 | Reranker 训练样本、困难负例、评测集等 | Hugging Face Datasets，待发布后补充链接 |
+| Reranker 权重 | 医学领域微调后的 Cross-Encoder Reranker | https://huggingface.co/literary123/test_encoder_only_base_bge-reranker-base-noscore_qwen_distill2 |
+| 向量知识库 | FAISS 索引、知识条目元数据、处理后的知识片段 | https://huggingface.co/datasets/literary123/faiss_index_A_v4 |
 
-由于医学资料可能涉及版权、授权和合规要求，数据集发布前会进行来源核验、脱敏检查和许可说明整理。当前阶段请将 `config.py` 中的模型路径和知识库路径配置为本地已有资源。
+由于医学资料可能涉及版权、授权和合规要求，GitHub 仓库不直接托管权重、索引或医学数据文件。使用时请先从 Hugging Face 下载 FAISS 知识库到本地，再将 `config.py` 中的 `FAISS_INDEX_PATH` 指向本地目录。
 
 ---
 
@@ -298,7 +296,7 @@ vllm serve /path/to/Qwen3-32B-AWQ \
 
 ### 4. 修改集中配置
 
-项目所有可调整配置集中在 `config.py`。若使用后续发布在 Hugging Face 的 Reranker 权重、向量知识库或训练数据，请先下载到本地，再将路径填入配置文件：
+项目所有可调整配置集中在 `config.py`。Reranker 可直接使用 Hugging Face 模型仓库引用；FAISS 知识库请先从 Hugging Face Dataset 下载到本地，再将路径填入配置文件：
 
 ```python
 # OpenAI-compatible LLM service.
@@ -308,7 +306,8 @@ MODEL_NAME = "Qwen3-32B-AWQ"
 
 # Local retrieval resources.
 EMBEDDING_MODEL = "/path/to/bge-m3"
-RERANK_MODEL = "/path/to/bge-reranker-base"
+RERANK_MODEL = "literary123/test_encoder_only_base_bge-reranker-base-noscore_qwen_distill2"
+FAISS_INDEX_REPO = "literary123/faiss_index_A_v4"
 FAISS_INDEX_PATH = "/path/to/faiss_index_A"
 
 # Retrieval defaults.
@@ -336,7 +335,7 @@ GENERATION_CONFIG_BASE = {
 }
 ```
 
-`utils.py`、`retriever.py`、`multi_agent.py`、`md_agent.py`、`one_agent.py` 和 `test.py` 均从 `config.py` 读取配置，不再在业务代码中维护模型路径、服务地址、检索阈值或生成参数。其中 `RERANK_MODEL` 和 `FAISS_INDEX_PATH` 对应的权重与索引文件后续将通过 Hugging Face 发布，GitHub 仓库不包含这些大文件。
+`utils.py`、`retriever.py`、`multi_agent.py`、`md_agent.py`、`one_agent.py` 和 `test.py` 均从 `config.py` 读取配置，不再在业务代码中维护模型路径、服务地址、检索阈值或生成参数。其中 `RERANK_MODEL` 指向 Hugging Face 模型仓库，`FAISS_INDEX_REPO` 记录 Hugging Face Dataset 引用，`FAISS_INDEX_PATH` 指向下载后的本地 FAISS 目录。
 
 ### 5. 启动后端服务
 
