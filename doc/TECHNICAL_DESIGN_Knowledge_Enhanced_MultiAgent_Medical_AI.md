@@ -19,7 +19,7 @@
 ---
 
 ## 2. 总体架构
-![system](./fig/system.png)
+![system](../fig/system.png)
 
 系统由两大子系统构成：
 
@@ -77,7 +77,7 @@ Reranker 领域微调
 ---
 
 ## 3. 知识增强子系统
-![knowledge_clean](./fig/knowledge_clean.png)
+![knowledge_clean](../fig/knowledge_clean.png)
 
 
 ### 3.1 数据来源
@@ -410,7 +410,7 @@ L = -log( exp(s+) / (exp(s+) + Σ exp(si-)) )
 ---
 
 ## 5. 检索引擎实现
-![rag](./fig/rag.png)
+![rag](../fig/rag.png)
 
 ### 5.1 普通检索流程
 
@@ -473,7 +473,7 @@ retrieve_docs_multi_channel(
 ---
 
 ## 6. 多智能体诊疗子系统
-![expert](./fig/multi_expert.png)
+![expert](../fig/multi_expert.png)
 
 ### 6.1 问题难度评估
 
