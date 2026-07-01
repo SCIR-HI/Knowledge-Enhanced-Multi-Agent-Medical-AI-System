@@ -257,8 +257,14 @@ LLM 知识增强与原子化
 ├── one_agent.py       # 简单问题处理逻辑
 ├── med_agent.py       # 中等复杂度问题处理逻辑
 ├── test.py            # 本地测试脚本
+├── TECHNICAL_DESIGN_Knowledge_Enhanced_MultiAgent_Medical_AI.md
+│                       # 技术设计文档、系统白皮书和开发者说明
 └── medrag_pipeline/   # 知识库构建与检索模型训练流程
 ```
+
+---
+
+完整技术实现说明见 [TECHNICAL_DESIGN_Knowledge_Enhanced_MultiAgent_Medical_AI.md](TECHNICAL_DESIGN_Knowledge_Enhanced_MultiAgent_Medical_AI.md)。相比 README，该文档更偏向系统架构、知识库构建、检索模型训练、多智能体协作机制和服务接口实现，可作为系统白皮书或开发者文档使用。
 
 ---
 
